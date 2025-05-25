@@ -17,7 +17,7 @@ class ImagenProductoResource extends Resource
 {
     protected static ?string $model = ImagenProducto::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-photo';
 
     public static function form(Form $form): Form
     {

@@ -17,7 +17,7 @@ class MetodoPagoResource extends Resource
 {
     protected static ?string $model = MetodoPago::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
     public static function form(Form $form): Form
     {
