@@ -1,5 +1,5 @@
 # Proyecto Final: MyDrugs
----
+
 # Objetivos del Proyecto de Gestión de Base de Datos
 
 Este proyecto tiene como objetivo principal el diseño e implementación de una base de datos y un sistema de información asociado para resolver una problemática específica. A continuación, se detallan los objetivos clave:
