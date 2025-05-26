@@ -44,7 +44,7 @@ El proyecto deberá cumplir con los siguientes requisitos técnicos y funcionale
 
 * Se deberá entregar un documento que explique cómo está compuesto cada punto de los requisitos mencionados anteriormente. [cite: 5]
 * Para los SPs, funciones y transacciones, el documento deberá mostrar cómo utilizarlos o cómo llamarlos. [cite: 5]
----
+
 ## Tecnologías Utilizadas
 
 Este proyecto fue construido utilizando las siguientes tecnologías:
