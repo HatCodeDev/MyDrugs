@@ -23,7 +23,7 @@ class CategoriaResource extends Resource
     {
         return $form
             ->schema([
-                //
+                //Aqui va el formulario para crear o editar una categoria
             ]);
     }
 
