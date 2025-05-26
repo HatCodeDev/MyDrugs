@@ -55,7 +55,7 @@ Este proyecto fue construido utilizando las siguientes tecnologías:
 * **MySQL**: El sistema de gestión de bases de datos relacionales utilizado para almacenar la información.
 * **HTML**: El lenguaje de marcado estándar para la creación de páginas web.
 * **CSS**: El lenguaje de hojas de estilo utilizado para el diseño y la presentación.
----
+
 
 1.  **Clonar el repositorio:**
     Ejecuta el siguiente comando en tu terminal para clonar el proyecto:
