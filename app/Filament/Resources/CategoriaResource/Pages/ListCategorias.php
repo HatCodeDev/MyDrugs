@@ -16,4 +16,12 @@ class ListCategorias extends ListRecords
             Actions\CreateAction::make(),
         ];
     }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            // Aquí puedes añadir widgets si los necesitas en la cabecera de la lista
+            // Ejemplo: CategoriaResource\Widgets\CategoriaStatsOverview::class,
+        ];
+    }
 }

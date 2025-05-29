@@ -14,6 +14,17 @@ class EditRepartidor extends EditRecord
     {
         return [
             Actions\DeleteAction::make(),
+            Actions\ViewAction::make(),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
+    protected function getSavedNotificationTitle(): ?string
+    {
+        return 'Datos del repartidor actualizados';
     }
 }
