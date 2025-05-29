@@ -11,6 +11,8 @@ class Repartidor extends Model
 {
     use HasFactory;
 
+    protected $table = 'repartidores'; // <--- AÑADE ESTA LÍNEA
+
     protected $fillable = [
         'user_id',
         'nombre_alias',

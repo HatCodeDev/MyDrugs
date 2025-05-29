@@ -6,7 +6,7 @@ use App\Filament\Resources\RepartidorResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListRepartidors extends ListRecords
+class ListRepartidores extends ListRecords
 {
     protected static string $resource = RepartidorResource::class;
 
