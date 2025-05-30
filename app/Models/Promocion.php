@@ -11,6 +11,8 @@ class Promocion extends Model
 {
     use HasFactory;
 
+     protected $table = 'promociones'; 
+
     protected $fillable = [
         'codigo_promocion',
         'descripcion',
