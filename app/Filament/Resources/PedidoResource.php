@@ -5,6 +5,9 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PedidoResource\Pages;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\VPedidoDetalle;
+use Filament\Infolists; 
+use Filament\Infolists\Infolist;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -16,8 +19,10 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Set;
-use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Hidden;
+use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
 
 class PedidoResource extends Resource
 {
@@ -87,11 +92,12 @@ class PedidoResource extends Resource
                 Section::make('Detalles del Pedido')
                     ->schema([
                         Repeater::make('detalles')
-                            ->relationship()
                             ->schema([
                                 Select::make('producto_id')
                                     ->label('Producto')
-                                    ->relationship('producto', 'nombre')
+                                    ->options(Producto::query()->pluck('nombre', 'id'))
+                                    ->searchable()
+                                    ->preload()
                                     ->searchable()
                                     ->preload()
                                     ->required()
@@ -115,7 +121,6 @@ class PedidoResource extends Resource
                                     ->label('Precio Unitario')
                                     ->numeric()
                                     ->required()
-                                    // ->disabled() // Si se autocompleta y no debe ser modificado
                                     ->prefix('$')
                                     ->columnSpan(2),
                                 TextInput::make('subtotal')
@@ -124,7 +129,7 @@ class PedidoResource extends Resource
                                     ->disabled()
                                     ->prefix('$')
                                     ->columnSpan(2)
-                                    ->helperText('Se calcula automáticamente al guardar.'),
+                                    ->helperText('Se calcula automáticamente al guardar (Trigger).'),
                             ])
                             ->columns(10)
                             ->addActionLabel('Añadir Producto')
@@ -139,64 +144,154 @@ class PedidoResource extends Resource
                         TextInput::make('subtotal_pedido')
                             ->numeric()
                             ->prefix('$')
-                            ->disabled() // Calculado por trigger
+                            ->disabled() 
                             ->helperText('Se calcula automáticamente.'),
                         TextInput::make('descuento_aplicado')
                             ->numeric()
                             ->prefix('$')
-                            ->disabled() // Calculado por trigger 
+                            ->disabled() 
                             ->helperText('Se calcula automáticamente.'),
                         TextInput::make('total_pedido')
                             ->numeric()
                             ->prefix('$')
-                            ->disabled() // Calculado por trigger
+                            ->disabled()
                             ->helperText('Se calcula automáticamente.'),
                     ])
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Información Principal del Pedido')
+                    ->columns(3)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('id')->label('ID Pedido'),
+                        Infolists\Components\TextEntry::make('cliente.name')->label('Cliente'), 
+                        Infolists\Components\TextEntry::make('cliente.email')->label('Email Cliente'),
+                        Infolists\Components\TextEntry::make('fecha_pedido')->dateTime('d/m/Y H:i:s'),
+                        Infolists\Components\TextEntry::make('estado_pedido')
+                            ->badge()
+                            ->color(fn(string $state): string => match (strtolower($state)) {
+                                'pendiente' => 'warning',
+                                'procesando' => 'info',
+                                'en_ruta' => 'primary',
+                                'entregado' => 'success',
+                                'cancelado' => 'danger',
+                                default => 'gray',
+                            }),
+                        Infolists\Components\TextEntry::make('codigo_seguimiento')->label('Cód. Seguimiento')->copyable()->placeholder('N/A'),
+                    ]),
+                Infolists\Components\Section::make('Entrega y Pago')
+                    ->columns(2)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('direccion_entrega_cifrada')->label('Dirección Entrega')->placeholder('N/A'),
+                        Infolists\Components\TextEntry::make('punto_entrega_especial')->label('Punto Entrega Esp.')->placeholder('N/A'),
+                        Infolists\Components\TextEntry::make('fecha_estimada_entrega')->dateTime('d/m/Y H:i')->label('Entrega Estimada')->placeholder('N/A'),
+                        Infolists\Components\TextEntry::make('repartidor.nombre_alias')->label('Repartidor')->placeholder('N/A'), 
+                        Infolists\Components\TextEntry::make('metodoPago.nombre_metodo')->label('Método Pago'), 
+                    ]),
+                Infolists\Components\Section::make('Notas y Promoción')
+                    ->columns(2)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('notas_cliente')->label('Notas Cliente')->placeholder('N/A')->columnSpanFull(),
+                        Infolists\Components\TextEntry::make('promocion.codigo_promocion')->label('Promoción Aplicada')->placeholder('N/A'), 
+                        Infolists\Components\TextEntry::make('promocion.valor_descuento')
+                            ->label('Valor Descuento Promo')
+                            ->money('MXN') 
+                            ->visible(fn($record) => $record->promocion_id !== null) 
+                            ->placeholder('N/A'),
+                    ]),
+                Infolists\Components\Section::make('Totales')
+                    ->columns(3)
+                    ->schema([
+                        Infolists\Components\TextEntry::make('subtotal_pedido')->money('MXN'),
+                        Infolists\Components\TextEntry::make('descuento_aplicado')->money('MXN'),
+                        Infolists\Components\TextEntry::make('total_pedido')->money('MXN')->weight('bold'),
+                    ]),
+                Infolists\Components\Section::make('Artículos del Pedido')
+                    ->schema([
+                        Infolists\Components\RepeatableEntry::make('detalles') 
+                            ->schema([
+                                Infolists\Components\TextEntry::make('producto.nombre')->label('Producto'),
+                                Infolists\Components\TextEntry::make('cantidad')->label('Cant.'),
+                                Infolists\Components\TextEntry::make('precio_unitario_en_pedido')->label('Precio Unit.')->money('MXN'),
+                                Infolists\Components\TextEntry::make('subtotal')->label('Subtotal Item')->money('MXN'),
+                            ])
+                            ->columns(4)
+                            ->grid(2) 
+                            ->label(false), 
+                    ]),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->query(VPedidoDetalle::query()) 
             ->columns([
-                Tables\Columns\TextColumn::make('id')->sortable()->searchable(),
-                Tables\Columns\TextColumn::make('cliente.name')
-                    ->label('Cliente')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('total_pedido')
-                    ->money('mxn')
+                Tables\Columns\TextColumn::make('pedido_id') 
+                    ->label('ID Pedido')
+                    ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('estado_pedido')
+                Tables\Columns\TextColumn::make('fecha_pedido')
+                    ->label('Fecha')
+                    ->date('d/m/Y') 
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('cliente_nombre')
+                    ->label('Cliente')
+                    ->searchable()
+                    ->sortable()
+                    ->limit(20)
+                    ->tooltip(fn($record) => $record->cliente_nombre),
+                Tables\Columns\TextColumn::make('producto_nombre') 
+                    ->label('Item Principal') 
+                    ->searchable()
+                    ->sortable()
+                    ->limit(25)
+                    ->tooltip(fn($record) => $record->producto_nombre),
+                Tables\Columns\TextColumn::make('cantidad')
+                    ->label('Cant.')
+                    ->alignCenter()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('detalle_subtotal')
+                    ->label('Subtotal Item')
+                    ->money('MXN')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('orden_total') 
+                    ->label('Total Pedido')
+                    ->money('MXN')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('estado_pedido') 
+                    ->label('Estado')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'PENDIENTE' => 'warning',
-                        'PROCESANDO' => 'info',
-                        'EN_RUTA' => 'primary',
-                        'ENTREGADO' => 'success',
-                        'CANCELADO' => 'danger',
+                    ->color(fn(string $state): string => match (strtolower($state)) {
+                        'pendiente' => 'warning',
+                        'procesando' => 'info',
+                        'en_ruta' => 'primary',
+                        'entregado' => 'success',
+                        'cancelado' => 'danger',
                         default => 'gray',
                     })
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('fecha_pedido')
-                    ->dateTime()
+                    ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('repartidor.nombre_alias')
+
+                Tables\Columns\TextColumn::make('detalle_id')
+                    ->label('ID Detalle')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('repartidor_nombre_alias')
                     ->label('Repartidor')
-                    ->sortable()
+                    ->placeholder('N/A')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable()
-                    ->placeholder('No asignado'),
-                Tables\Columns\TextColumn::make('codigo_seguimiento')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('metodo_pago_nombre')
+                    ->label('Método Pago')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('estado_pedido')
@@ -209,14 +304,48 @@ class PedidoResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(), // Considera si realmente quieres permitir borrar pedidos o solo cancelarlos
+                Tables\Actions\ViewAction::make()
+                    ->url(fn(VPedidoDetalle $record): string => PedidoResource::getUrl('view', ['record' => $record->pedido_id])),
+
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation() 
+                    ->action(function (VPedidoDetalle $record) { 
+                        try {
+
+                            DB::statement(
+                                "CALL sp_eliminar_pedido(?, @success, @message)",
+                                [$record->pedido_id] 
+                            );
+                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+
+
+                            if ($result && $result->success) {
+                                Notification::make()
+                                    ->title('¡Eliminado!')
+                                    ->body($result->message ?: 'El pedido ha sido eliminado correctamente.')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Error al Eliminar')
+                                    ->body($result->message ?: 'No se pudo eliminar el pedido (según SP).')
+                                    ->danger()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+
+                            Notification::make()
+                                ->title('Error Inesperado')
+                                ->body('Ocurrió un problema técnico al intentar eliminar el pedido: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                // ]),
             ]);
     }
 
@@ -235,6 +364,7 @@ class PedidoResource extends Resource
             'index' => Pages\ListPedidos::route('/'),
             'create' => Pages\CreatePedido::route('/create'),
             'edit' => Pages\EditPedido::route('/{record}/edit'),
+            'view' => Pages\ViewPedido::route('/{record}'),
         ];
     }
 }

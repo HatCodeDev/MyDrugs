@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('producto_id')->constrained('productos')->onDelete('restrict'); // O onDelete('set null') si se quiere mantener el detalle si el producto se borra
             $table->unsignedInteger('cantidad');
             $table->decimal('precio_unitario_en_pedido', 10, 2); // Precio al momento de la compra
-            $table->decimal('subtotal', 10, 2); // cantidad * precio_unitario_en_pedido
+            $table->decimal('subtotal', 10, 2)->nullable(); // cantidad * precio_unitario_en_pedido
             $table->timestamps();
 
             $table->unique(['pedido_id', 'producto_id']); // Evitar duplicados del mismo producto en el mismo pedido
