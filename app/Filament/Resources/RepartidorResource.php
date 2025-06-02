@@ -3,165 +3,167 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RepartidorResource\Pages;
-use App\Filament\Resources\RepartidorResource\RelationManagers;
-use App\Models\Repartidor;
-use App\Models\User; // Para el selector de usuario
+use App\Models\Repartidor;             // Modelo Eloquent base
+use App\Models\VRepartidoresDetalle;   // Modelo Eloquent para tu vista
+use App\Models\User;                   // Para el selector de user_id
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
+// use Illuminate\Support\Facades\Log; // Si necesitas logging adicional
 
 class RepartidorResource extends Resource
 {
     protected static ?string $model = Repartidor::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-truck'; // Icono para repartidores
+    protected static ?string $navigationIcon = 'heroicon-o-truck'; // Ícono para repartidores
     protected static ?string $modelLabel = 'Repartidor';
     protected static ?string $pluralModelLabel = 'Repartidores';
-    protected static ?string $recordTitleAttribute = 'nombre_alias';
-
+    protected static ?string $recordTitleAttribute = 'nombre_alias'; // Para títulos en Filament
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('user_id')
-                    ->label('Usuario Asociado (Opcional)')
-                    ->relationship(name: 'user', titleAttribute: 'name') // Asume que User tiene 'name'
+                    ->relationship('user', 'name') // Asume relación 'user' en Repartidor y 'name' en User
                     ->searchable()
                     ->preload()
-                    ->placeholder('Seleccionar un usuario existente para este repartidor')
-                    ->unique(table: 'repartidores', column: 'user_id', ignoreRecord: true) // user_id debe ser único
-                    ->helperText('Si este repartidor tiene una cuenta de usuario en el sistema.'),
-
+                    ->nullable()
+                    // La unicidad de user_id en repartidores ya está en la BD y se validará en el SP
+                    ->label('Usuario Asociado (Opcional)'),
                 Forms\Components\TextInput::make('nombre_alias')
-                    ->label('Nombre o Alias del Repartidor')
                     ->required()
-                    ->unique(ignoreRecord: true)
                     ->maxLength(100)
-                    ->placeholder('Ej: Repartidor Veloz 01'),
-
+                    // La unicidad del alias ya está en la BD y se validará en el SP
+                    ->label('Nombre o Alias'),
                 Forms\Components\TextInput::make('vehiculo_descripcion')
-                    ->label('Descripción del Vehículo')
                     ->nullable()
                     ->maxLength(255)
-                    ->placeholder('Ej: Motocicleta Honda Roja, Placa XYZ-123'),
-
+                    ->label('Descripción del Vehículo'),
                 Forms\Components\TextInput::make('zona_operativa_preferida')
-                    ->label('Zona Operativa Preferida')
                     ->nullable()
                     ->maxLength(255)
-                    ->placeholder('Ej: Zona Centro, Colonias del Sur'),
-
+                    ->label('Zona Operativa Preferida'),
                 Forms\Components\Toggle::make('disponible')
-                    ->label('Disponible para Entregas')
+                    ->required()
                     ->default(true)
-                    ->onIcon('heroicon-s-check-circle')
-                    ->offIcon('heroicon-s-x-circle')
-                    ->onColor('success')
-                    ->offColor('danger'),
-
+                    ->label('Disponible para Entregas'),
                 Forms\Components\TextInput::make('calificacion_promedio')
-                    ->label('Calificación Promedio')
                     ->numeric()
+                    ->nullable()
                     ->minValue(0)
-                    ->maxValue(5)
-                    ->step(0.01) // Para decimales
-                    ->readOnly() // Generalmente se calcula, no se edita directamente
-                    ->disabled() // Para que no se pueda modificar
-                    ->helperText('Este campo se actualiza automáticamente.')
-                    ->nullable(),
-
+                    ->maxValue(5) // Asumiendo una escala de 0-5
+                    ->step(0.01) // Para permitir decimales
+                    ->label('Calificación Promedio')
+                    ->helperText('Este campo podría ser calculado automáticamente en el futuro.'),
                 Forms\Components\TextInput::make('numero_contacto_cifrado')
-                    ->label('Número de Contacto (Simulado/Cifrado)')
                     ->nullable()
                     ->maxLength(255)
-                    ->placeholder('Información de contacto'),
-            ])->columns(2); // Dos columnas para el formulario
+                    ->label('Número de Contacto (Simulación Cifrado)'),
+            ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->query(VRepartidoresDetalle::query()) // Usa la VISTA para el listado
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
+                Tables\Columns\TextColumn::make('repartidor_id')
+                    ->label('ID Rep.')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('nombre_alias')
                     ->label('Alias')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user.name') // Muestra el nombre del usuario asociado
-                    ->label('Usuario del Sistema')
-                    ->default('N/A') // Si no hay usuario asociado
+                Tables\Columns\TextColumn::make('nombre_usuario') // De la vista (join con users)
+                    ->label('Usuario Sistema')
                     ->searchable()
-                    ->sortable(),
-                Tables\Columns\IconColumn::make('disponible')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('email_usuario') // De la vista
+                    ->label('Email Usuario')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('disponible') // Muestra como ícono booleano
                     ->label('Disponible')
                     ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('danger')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('vehiculo_descripcion')
                     ->label('Vehículo')
                     ->limit(30)
-                    ->tooltip(fn (Repartidor $record): ?string => $record->vehiculo_descripcion)
+                    ->tooltip('Ver descripción completa')
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('zona_operativa_preferida')
                     ->label('Zona Preferida')
                     ->limit(30)
-                    ->tooltip(fn (Repartidor $record): ?string => $record->zona_operativa_preferida)
+                    ->tooltip('Ver zona completa')
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('calificacion_promedio')
                     ->label('Calificación')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn (?string $state): string => $state ? number_format((float)$state, 2) : '-') // Formatea a 2 decimales, muestra '-' si es null
                     ->sortable()
-                    ->default('N/A'),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->alignRight(), // Es común alinear números a la derecha
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha de Registro')
-                    ->dateTime('d/m/Y H:i')
+                    ->label('Fecha Registro')
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('disponible')
-                    ->label('Disponibilidad')
-                    ->trueLabel('Sí, disponible')
-                    ->falseLabel('No disponible')
-                    ->placeholder('Todos'),
-                Tables\Filters\SelectFilter::make('user_id')
-                    ->label('Filtrar por Usuario')
-                    ->relationship('user', 'name') // Asume que el modelo User tiene 'name'
-                    ->searchable()
-                    ->preload()
-                    ->placeholder('Seleccionar usuario'),
+                //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->action(function (Model $record) { // $record es VRepartidoresDetalle
+                        try {
+                            DB::statement(
+                                "CALL sp_eliminar_repartidor(?, @success, @message)",
+                                [$record->repartidor_id] // ID del repartidor desde la vista
+                            );
+                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+
+                            if ($result && $result->success) {
+                                Notification::make()
+                                    ->title($result->message ?: '¡Repartidor eliminado exitosamente!')
+                                    ->success()->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Error al eliminar repartidor')
+                                    ->body($result->message ?: 'No se pudo eliminar el repartidor.')
+                                    ->danger()->send();
+                            }
+                        } catch (\Exception $e) {
+                            report($e);
+                            Notification::make()
+                                ->title('Error inesperado en la eliminación')
+                                ->body('Ocurrió un problema técnico: ' . $e->getMessage())
+                                ->danger()->send();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    // Considerar personalizar si necesitas usar SPs para eliminación en masa.
                 ]),
-            ])
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
             ]);
     }
 
     public static function getRelations(): array
     {
         return [
-            // Aquí podrías añadir RelationManagers, por ejemplo, para ver los pedidos asignados
-            // RelationManagers\PedidosRelationManager::class,
+            // Aquí podrías tener RelationManagers, por ejemplo, para listar pedidos asignados a este repartidor.
         ];
     }
 
@@ -171,7 +173,6 @@ class RepartidorResource extends Resource
             'index' => Pages\ListRepartidores::route('/'),
             'create' => Pages\CreateRepartidor::route('/create'),
             'edit' => Pages\EditRepartidor::route('/{record}/edit'),
-            // 'view' => Pages\ViewRepartidor::route('/{record}'), // Si quieres una página de vista dedicada
         ];
     }
 }

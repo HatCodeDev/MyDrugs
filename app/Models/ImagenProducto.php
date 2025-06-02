@@ -10,7 +10,7 @@ class ImagenProducto extends Model
 {
     use HasFactory;
 
-    protected $table = 'imagenes_producto'; // Especificar nombre de tabla si no sigue convención exacta (ImagenProductos)
+    protected $table = 'imagenes_producto';
 
     protected $fillable = [
         'producto_id',
@@ -19,15 +19,21 @@ class ImagenProducto extends Model
         'orden',
     ];
 
+    /**
+     * Los atributos que deben ser convertidos a tipos nativos.
+     *
+     * @var array
+     */
     protected $casts = [
+        'producto_id' => 'integer',
         'orden' => 'integer',
     ];
 
     /**
-     * Get the producto that owns the imagen.
+     * Obtiene el producto al que pertenece la imagen.
      */
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class, 'producto_id');
     }
 }
