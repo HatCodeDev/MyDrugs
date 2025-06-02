@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\User;
+use App\Models\VEClientes;
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class VEClientesPolicy
+{
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any models.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->can('view_any_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(User $user, VEClientes $vEClientes): bool
+    {
+        return $user->can('view_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can create models.
+     */
+    public function create(User $user): bool
+    {
+        return $user->can('create_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     */
+    public function update(User $user, VEClientes $vEClientes): bool
+    {
+        return $user->can('update_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(User $user, VEClientes $vEClientes): bool
+    {
+        return $user->can('delete_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can bulk delete.
+     */
+    public function deleteAny(User $user): bool
+    {
+        return $user->can('delete_any_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can permanently delete.
+     */
+    public function forceDelete(User $user, VEClientes $vEClientes): bool
+    {
+        return $user->can('force_delete_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can permanently bulk delete.
+     */
+    public function forceDeleteAny(User $user): bool
+    {
+        return $user->can('force_delete_any_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can restore.
+     */
+    public function restore(User $user, VEClientes $vEClientes): bool
+    {
+        return $user->can('restore_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can bulk restore.
+     */
+    public function restoreAny(User $user): bool
+    {
+        return $user->can('restore_any_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can replicate.
+     */
+    public function replicate(User $user, VEClientes $vEClientes): bool
+    {
+        return $user->can('replicate_v::e::clientes');
+    }
+
+    /**
+     * Determine whether the user can reorder.
+     */
+    public function reorder(User $user): bool
+    {
+        return $user->can('reorder_v::e::clientes');
+    }
+}
