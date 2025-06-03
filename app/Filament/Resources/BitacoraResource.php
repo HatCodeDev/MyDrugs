@@ -21,10 +21,10 @@ class BitacoraResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Usuario')
-                    ->searchable()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('user.name')
+                //     ->label('Usuario')
+                //     ->searchable()
+                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('accion')
                     ->label('Acción')
