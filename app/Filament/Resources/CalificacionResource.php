@@ -17,11 +17,12 @@ use Filament\Forms\Get;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Gate;
 
 class CalificacionResource extends Resource
 {
-    // ESTA LÍNEA NO CAMBIA. SIGUE SIENDO EL MODELO BASE Calificacion::class.
     protected static ?string $model = Calificacion::class;
     protected static ?string $navigationIcon = 'heroicon-o-star';
     protected static ?string $modelLabel = 'Calificación';
@@ -152,33 +153,64 @@ class CalificacionResource extends Resource
                 // ... tus filtros ...
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
-                    ->action(function (Model $record) { // $record aquí será una instancia de VCalificacionDetalle
-                        try {
-                            DB::statement(
-                                "CALL sp_eliminar_calificacion(?, @success, @message)",
-                                [$record->calificacion_id] // Usamos el calificacion_id de la vista
-                            );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
-                            if ($result && $result->success) {
-                                Notification::make()
-                                    ->title($result->message ?: '¡Eliminación exitosa!')
-                                    ->success()->send();
-                            } else {
-                                Notification::make()
-                                    ->title('Error al eliminar')
-                                    ->body($result->message ?: 'No se pudo eliminar la calificación.')
-                                    ->danger()->send();
-                            }
-                        } catch (\Exception $e) {
-                            report($e);
+                 Tables\Actions\EditAction::make()
+                ->visible(function (VCalificacionDetalle $record): bool {
+                    $calificacionOriginal = Calificacion::find($record->calificacion_id);
+                    if (!$calificacionOriginal) {
+                        return false;
+                    }
+
+                    // Primero, asegúrate de que haya un usuario autenticado para el panel actual
+                    if (!Filament::auth()->check()) {
+                        return false;
+                    }
+                    
+                    // Usa Gate::allows() para verificar el permiso.
+                    // Esto invocará el método 'update' en tu CalificacionPolicy.
+                    return Gate::allows('update', $calificacionOriginal);
+                }),
+
+            Tables\Actions\DeleteAction::make()
+                ->visible(function (VCalificacionDetalle $record): bool {
+                    $calificacionOriginal = Calificacion::find($record->calificacion_id);
+                    if (!$calificacionOriginal) {
+                        return false;
+                    }
+
+                    if (!Filament::auth()->check()) {
+                        return false;
+                    }
+
+                    // Usa Gate::allows() para verificar el permiso.
+                    // Esto invocará el método 'delete' en tu CalificacionPolicy.
+                    return Gate::allows('delete', $calificacionOriginal);
+                })
+                ->action(function (EloquentModel $record) { // $record aquí es VCalificacionDetalle
+                    // Tu lógica actual para llamar al SP de eliminación está bien.
+                    try {
+                        DB::statement(
+                            "CALL sp_eliminar_calificacion(?, @success, @message)",
+                            [$record->calificacion_id]
+                        );
+                        $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                        if ($result && $result->success) {
                             Notification::make()
-                                ->title('Error inesperado')
-                                ->body('Ocurrió un problema técnico: ' . $e->getMessage())
+                                ->title($result->message ?: '¡Eliminación exitosa!')
+                                ->success()->send();
+                        } else {
+                            Notification::make()
+                                ->title('Error al eliminar')
+                                ->body($result->message ?: 'No se pudo eliminar la calificación.')
                                 ->danger()->send();
                         }
-                    }),
+                    } catch (\Exception $e) {
+                        report($e);
+                        Notification::make()
+                            ->title('Error inesperado')
+                            ->body('Ocurrió un problema técnico: ' . $e->getMessage())
+                            ->danger()->send();
+                    }
+                }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -187,7 +219,6 @@ class CalificacionResource extends Resource
             ]);
     }
 
-    // getRelations() y getPages() NO CAMBIAN
     public static function getRelations(): array
     {
         return [];
