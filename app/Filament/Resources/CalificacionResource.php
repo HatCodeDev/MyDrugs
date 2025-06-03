@@ -3,11 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CalificacionResource\Pages;
-use App\Models\Calificacion; // Modelo base para el recurso
-use App\Models\VCalificacionDetalle; // <--- AÑADE ESTE IMPORT para tu modelo de vista
-use Illuminate\Database\Eloquent\Builder; // <--- AÑADE ESTE IMPORT para el tipado en modifyQueryUsing si lo usaras
+use App\Models\Calificacion;
+use App\Models\VCalificacionDetalle; 
+use Illuminate\Database\Eloquent\Builder; 
 
-// Tus otros uses:
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -17,9 +16,7 @@ use Filament\Forms\Get;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Model as EloquentModel;
-use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Database\Eloquent\Model;
 
 class CalificacionResource extends Resource
 {
@@ -30,10 +27,8 @@ class CalificacionResource extends Resource
     protected static ?string $recordTitleAttribute = 'id';
 
 
-    // EL MÉTODO form() NO CAMBIA.
     public static function form(Form $form): Form
     {
-        // ... (tu código de form existente, sin cambios) ...
         return $form
             ->schema([
                 Forms\Components\Hidden::make('user_id')
@@ -79,14 +74,11 @@ class CalificacionResource extends Resource
             ]);
     }
 
-    // MÉTODO table() MODIFICADO:
     public static function table(Table $table): Table
     {
         return $table
-            // AQUÍ LE DECIMOS A LA TABLA QUE USE LA VISTA COMO SU FUENTE DE DATOS PRINCIPAL
             ->query(VCalificacionDetalle::query())
             ->columns([
-                // Columnas de la VISTA 'v_calificaciones_detalle'
                 Tables\Columns\TextColumn::make('calificacion_id')
                     ->label('ID Cal.')
                     ->sortable()
@@ -95,20 +87,15 @@ class CalificacionResource extends Resource
                 Tables\Columns\TextColumn::make('producto_nombre')
                     ->label('Producto')
                     ->searchable()
-                    ->sortable()
-                    
-                    ,
-
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('producto_precio_unitario')
                     ->label('Precio Prod.')
                     ->money('MXN')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('usuario_nombre')
                     ->label('Usuario')
                     ->searchable()
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('usuario_email')
                     ->label('Email Usuario')
                     ->searchable()
@@ -124,19 +111,16 @@ class CalificacionResource extends Resource
                     })
                     ->formatStateUsing(fn (int $state): string => "{$state} " . ($state === 1 ? 'estrella' : 'estrellas'))
                     ->label('Puntuación'),
-
                 Tables\Columns\TextColumn::make('comentario')
                     ->limit(50)
                     ->tooltip('Ver comentario completo')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Comentario'),
-
                 Tables\Columns\TextColumn::make('fecha_calificacion')
                     ->dateTime()
                     ->sortable()
                     ->label('Fecha Calificación'),
-
                 Tables\Columns\TextColumn::make('calificacion_created_at')
                     ->dateTime()
                     ->sortable()
@@ -150,67 +134,35 @@ class CalificacionResource extends Resource
                     ->label('Actualizado'),
             ])
             ->filters([
-                // ... tus filtros ...
             ])
             ->actions([
-                 Tables\Actions\EditAction::make()
-                ->visible(function (VCalificacionDetalle $record): bool {
-                    $calificacionOriginal = Calificacion::find($record->calificacion_id);
-                    if (!$calificacionOriginal) {
-                        return false;
-                    }
-
-                    // Primero, asegúrate de que haya un usuario autenticado para el panel actual
-                    if (!Filament::auth()->check()) {
-                        return false;
-                    }
-                    
-                    // Usa Gate::allows() para verificar el permiso.
-                    // Esto invocará el método 'update' en tu CalificacionPolicy.
-                    return Gate::allows('update', $calificacionOriginal);
-                }),
-
-            Tables\Actions\DeleteAction::make()
-                ->visible(function (VCalificacionDetalle $record): bool {
-                    $calificacionOriginal = Calificacion::find($record->calificacion_id);
-                    if (!$calificacionOriginal) {
-                        return false;
-                    }
-
-                    if (!Filament::auth()->check()) {
-                        return false;
-                    }
-
-                    // Usa Gate::allows() para verificar el permiso.
-                    // Esto invocará el método 'delete' en tu CalificacionPolicy.
-                    return Gate::allows('delete', $calificacionOriginal);
-                })
-                ->action(function (EloquentModel $record) { // $record aquí es VCalificacionDetalle
-                    // Tu lógica actual para llamar al SP de eliminación está bien.
-                    try {
-                        DB::statement(
-                            "CALL sp_eliminar_calificacion(?, @success, @message)",
-                            [$record->calificacion_id]
-                        );
-                        $result = DB::selectOne("SELECT @success AS success, @message AS message");
-                        if ($result && $result->success) {
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->action(function (Model $record) { 
+                        try {
+                            DB::statement(
+                                "CALL sp_eliminar_calificacion(?, @success, @message)",
+                                [$record->calificacion_id] 
+                            );
+                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            if ($result && $result->success) {
+                                Notification::make()
+                                    ->title($result->message ?: '¡Eliminación exitosa!')
+                                    ->success()->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Error al eliminar')
+                                    ->body($result->message ?: 'No se pudo eliminar la calificación.')
+                                    ->danger()->send();
+                            }
+                        } catch (\Exception $e) {
+                            report($e);
                             Notification::make()
-                                ->title($result->message ?: '¡Eliminación exitosa!')
-                                ->success()->send();
-                        } else {
-                            Notification::make()
-                                ->title('Error al eliminar')
-                                ->body($result->message ?: 'No se pudo eliminar la calificación.')
+                                ->title('Error inesperado')
+                                ->body('Ocurrió un problema técnico: ' . $e->getMessage())
                                 ->danger()->send();
                         }
-                    } catch (\Exception $e) {
-                        report($e);
-                        Notification::make()
-                            ->title('Error inesperado')
-                            ->body('Ocurrió un problema técnico: ' . $e->getMessage())
-                            ->danger()->send();
-                    }
-                }),
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
