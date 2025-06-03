@@ -62,6 +62,26 @@ return [
             ]) : [],
         ],
 
+        // Nueva conexión para el usuario 'creador_registros'
+        'mysql_inserter' => [
+            'driver' => 'mysql',
+            'host' => env('DB_INSERTER_HOST', '127.0.0.1'), 
+            'port' => env('DB_INSERTER_PORT', '3306'),
+            'database' => env('DB_INSERTER_DATABASE', 'mydrugs'),
+            'username' => env('DB_INSERTER_USERNAME', 'creador_registros'),
+            'password' => env('DB_INSERTER_PASSWORD', 'creadorPass'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

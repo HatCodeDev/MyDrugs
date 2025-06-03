@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable,HasRoles;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -32,7 +34,15 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+    public function pedidos(): HasMany
+    {
+        return $this->hasMany(Pedido::class);
+    }
 
+    public function repartidor(): HasOne // Un usuario puede ser un repartidor
+    {
+        return $this->hasOne(Repartidor::class);
+    }
     /**
      * Get the attributes that should be cast.
      *

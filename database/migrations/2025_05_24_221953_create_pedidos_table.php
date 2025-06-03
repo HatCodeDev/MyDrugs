@@ -21,9 +21,9 @@ return new class extends Migration
             $table->text('direccion_entrega_cifrada')->nullable(); // Simulación
             $table->string('punto_entrega_especial', 255)->nullable();
             
-            $table->decimal('subtotal_pedido', 10, 2);
+            $table->decimal('subtotal_pedido', 10, 2)->nullable();
             $table->decimal('descuento_aplicado', 10, 2)->default(0.00);
-            $table->decimal('total_pedido', 10, 2);
+            $table->decimal('total_pedido', 10, 2)->nullable();
             
             $table->string('estado_pedido', 50)->default('PENDIENTE'); // Ej: PENDIENTE, PROCESANDO, EN_RUTA, ENTREGADO, CANCELADO
             $table->timestamp('fecha_pedido')->useCurrent();

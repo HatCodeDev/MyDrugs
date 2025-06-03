@@ -3,27 +3,26 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\StockResource\Pages;
-use App\Filament\Resources\StockResource\RelationManagers;
-use App\Models\Stock;
-use App\Models\Producto; // Para el selector de producto
+use App\Models\Stock;   
+use App\Models\VStockDetalle; 
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Database\Eloquent\Model; // Asegúrate de importar la clase Model correcta
+use Illuminate\Database\Eloquent\Model; 
+use Illuminate\Support\Facades\DB;      
+use Filament\Notifications\Notification; 
 
 class StockResource extends Resource
 {
     protected static ?string $model = Stock::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-archive-box'; // Icono para stock
+    protected static ?string $navigationIcon = 'heroicon-o-archive-box'; 
 
     protected static ?string $modelLabel = 'Entrada de Stock';
     protected static ?string $pluralModelLabel = 'Gestión de Stock';
-    // protected static ?string $recordTitleAttribute = 'lote_numero'; // O combinar con producto
 
 
     public static function form(Form $form): Form
@@ -32,10 +31,13 @@ class StockResource extends Resource
             ->schema([
                 Forms\Components\Select::make('producto_id')
                     ->label('Producto')
-                    ->relationship(name: 'producto', titleAttribute: 'nombre') // Asume que Producto tiene 'nombre'
+                    ->relationship(name: 'producto', titleAttribute: 'nombre') 
                     ->searchable()
                     ->preload()
                     ->required()
+                    ->placeholder('Seleccionar el producto para esta entrada de stock')
+                    ->disabled(fn (string $operation): bool => $operation === 'edit')
+                    ->dehydrated(fn (string $operation): bool => $operation !== 'edit')
                     ->placeholder('Seleccionar el producto para esta entrada de stock')
                     ->columnSpanFull(),
 
@@ -70,53 +72,66 @@ class StockResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->query(VStockDetalle::query())
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
+                Tables\Columns\TextColumn::make('stock_id') 
+                    ->label('ID Stock')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('producto.nombre')
+                Tables\Columns\TextColumn::make('producto_nombre') 
                     ->label('Producto')
                     ->searchable()
                     ->sortable()
-                    ->url(fn (Stock $record): ?string => $record->producto ? ProductoResource::getUrl('edit', ['record' => $record->producto_id]) : null)
+                    ->url(fn (VStockDetalle $record): ?string => $record->producto_id ? ProductoResource::getUrl('edit', ['record' => $record->producto_id]) : null)
                     ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('cantidad_disponible')
                     ->label('Cantidad')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('lote_numero')
+                Tables\Columns\TextColumn::make('lote_numero') 
                     ->label('Lote')
                     ->searchable()
                     ->sortable()
                     ->default('N/A'),
-                Tables\Columns\TextColumn::make('fecha_caducidad')
+                Tables\Columns\TextColumn::make('fecha_caducidad') 
                     ->label('Caducidad')
                     ->date('d/m/Y')
                     ->sortable()
                     ->default('N/A'),
-                Tables\Columns\TextColumn::make('ubicacion_almacen')
+                Tables\Columns\TextColumn::make('ubicacion_almacen') 
                     ->label('Ubicación')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->default('N/A'),
-                Tables\Columns\TextColumn::make('ultima_actualizacion_stock')
+                Tables\Columns\TextColumn::make('ultima_actualizacion_stock') 
                     ->label('Última Actualización')
                     ->dateTime('d/m/Y H:i:s')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
+                Tables\Columns\TextColumn::make('stock_creado_en') 
                     ->label('Fecha de Creación')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                // Si quieres mostrar 'stock_actualizado_en', añádelo aquí también
+                // Tables\Columns\TextColumn::make('stock_actualizado_en')
+                //     ->label('Últ. Modif. Stock')
+                //     ->dateTime('d/m/Y H:i')
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('producto_id')
+                Tables\Filters\SelectFilter::make('producto_id') // <--- Filtra usando producto_id de la vista
                     ->label('Filtrar por Producto')
-                    ->relationship('producto', 'nombre')
+                    // Para el filtro, si quieres usar la relación del modelo VStockDetalle (si la defines)
+                    // o puedes cargar las opciones manualmente si es más simple:
+                    ->options(
+                        \App\Models\Producto::pluck('nombre', 'id')->all()
+                    )
+                    // Si definiste la relación 'productoOriginal' en VStockDetalle:
+                    // ->relationship('productoOriginal', 'nombre')
                     ->searchable()
                     ->preload(),
-                Tables\Filters\Filter::make('fecha_caducidad')
+                Tables\Filters\Filter::make('fecha_caducidad') // <--- Columna de la vista (mismo nombre)
                     ->form([
                         Forms\Components\DatePicker::make('caducado_desde')
                             ->label('Caducado desde'),
@@ -137,17 +152,53 @@ class StockResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->requiresConfirmation() 
+                    ->action(function (VStockDetalle $record) { 
+                        try {
+                            $stockIdParaEliminar = $record->stock_id;
+                            DB::statement(
+                                "CALL sp_eliminar_stock(?, @success, @message)",
+                                [$stockIdParaEliminar]
+                            );
+                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+
+
+                            if ($result && $result->success) {
+                                Notification::make()
+                                    ->title('¡Eliminado!')
+                                    ->body($result->message ?: 'La entrada de stock ha sido eliminada correctamente.')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $errorMessage = 'Error desconocido desde el SP.';
+                                if ($result && isset($result->message)) {
+                                    $errorMessage = $result->message;
+                                } elseif (!$result) {
+                                    $errorMessage = 'El SP no devolvió un resultado (variables @success, @message no recuperadas).';
+                                }
+
+                                Notification::make()
+                                    ->title('Error al Eliminar Stock')
+                                    ->body($errorMessage)
+                                    ->danger()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                           
+                            report($e); 
+                            Notification::make()
+                                ->title('Error Inesperado')
+                                ->body('Ocurrió un problema técnico al intentar eliminar la entrada de stock: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ])
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
+              
             ]);
+            
     }
 
     public static function getRelations(): array
@@ -173,11 +224,9 @@ class StockResource extends Resource
         if (!$record) {
             return null;
         }
-        // Asegurarse de que $record es una instancia de Stock
         if ($record instanceof Stock && $record->producto) {
             return 'Stock de ' . $record->producto->nombre . ($record->lote_numero ? ' (Lote: ' . $record->lote_numero . ')' : '');
         }
-        // Llama al método padre si no es una instancia de Stock o no se puede generar el título personalizado
         return parent::getRecordTitle($record);
     }
 }

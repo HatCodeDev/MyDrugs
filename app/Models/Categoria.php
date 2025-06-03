@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Categoria extends Model
 {
@@ -16,18 +15,18 @@ class Categoria extends Model
     ];
 
     /**
-     * Get the productos for the categoria.
+     * Los atributos que deben ser convertidos a tipos nativos.
+     *
+     * @var array
      */
-    public function productos(): HasMany
-    {
-        return $this->hasMany(Producto::class);
-    }
+    protected $casts = [
+        // Aquí puedes añadir conversiones si son necesarias, por ejemplo:
+        // 'algun_campo_booleano' => 'boolean',
+    ];
 
-    /**
-     * Get the promociones aplicables a esta categoria.
-     */
-    public function promociones(): HasMany
-    {
-        return $this->hasMany(Promocion::class, 'aplicable_a_categoria_id');
-    }
+    // Si tienes relaciones, defínelas aquí. Ejemplo:
+    // public function productos()
+    // {
+    //     return $this->hasMany(Producto::class);
+    // }
 }

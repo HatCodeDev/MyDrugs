@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Auth; // Importar la fachada Auth para user_id
 class CreateProducto extends CreateRecord
 {
     protected static string $resource = ProductoResource::class;
-
     /**
      * Sobrescribe el método de creación de registro para llamar a un Stored Procedure.
      *
