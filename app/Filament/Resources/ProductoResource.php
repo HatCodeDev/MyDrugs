@@ -146,11 +146,6 @@ class ProductoResource extends Resource
                                 ->danger()->send();
                         }
                     }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 

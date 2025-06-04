@@ -56,10 +56,11 @@ class StockResource extends Resource
                     ->placeholder('Ej: LOTE2025A'),
 
                 Forms\Components\DatePicker::make('fecha_caducidad')
-                    ->label('Fecha de Caducidad (Opcional)')
+                    ->label('Fecha de Caducidad')
                     ->nullable()
                     ->displayFormat('d/m/Y')
-                    ->placeholder('DD/MM/AAAA'),
+                    ->placeholder('DD/MM/AAAA')
+                    ->required(),
 
                 Forms\Components\TextInput::make('ubicacion_almacen')
                     ->label('Ubicación en Almacén (Opcional)')

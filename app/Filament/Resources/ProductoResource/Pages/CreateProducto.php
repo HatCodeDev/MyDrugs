@@ -23,7 +23,7 @@ class CreateProducto extends CreateRecord
         $precioUnitario = $data['precio_unitario'];
         $unidadMedida = $data['unidad_medida'];
         $activo = $data['activo'] ?? true; // Default true si no se envía
-        $dbEditorConnection = DB::connection('mysql_editor');
+        $dbInserterConnection = DB::connection('mysql_inserter');
         try {
             $dbInserterConnection->statement( 
                 "CALL sp_crear_producto(?, ?, ?, ?, ?, ?, @success, @message, @producto_id)",

@@ -186,12 +186,7 @@ class PromocionResource extends Resource
                                 ->danger()->send();
                         }
                     }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                ]);
     }
 
     public static function getRelations(): array

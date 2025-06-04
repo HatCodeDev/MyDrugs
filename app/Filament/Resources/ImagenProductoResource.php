@@ -169,15 +169,6 @@ class ImagenProductoResource extends Resource
                                 ->danger()->send();
                         }
                     }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
-                    // NOTA: DeleteBulkAction por defecto usa Eloquent.
-                    // Para usar SPs y manejar la eliminación de archivos físicos en masa,
-                    // necesitarías una BulkAction personalizada.
-                    ,
-                ]),
             ]);
     }
 
