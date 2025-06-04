@@ -31,9 +31,9 @@ class EditRepartidor extends EditRecord
         $disponible = $data['disponible'] ?? true;
         $calificacionPromedio = $data['calificacion_promedio'] ?? null;
         $numeroContactoCifrado = $data['numero_contacto_cifrado'] ?? null;
-
+        $dbEditorConnection = DB::connection('mysql_editor');
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_repartidor(?, ?, ?, ?, ?, ?, ?, ?, @success, @message)",
                 [
                     $repartidorId,
@@ -47,7 +47,7 @@ class EditRepartidor extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

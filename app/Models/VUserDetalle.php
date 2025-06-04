@@ -9,6 +9,7 @@ class VUserDetalle extends Model
     /**
      * La tabla asociada con el modelo (la vista).
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_users_detalle';
 
     /**

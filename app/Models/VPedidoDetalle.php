@@ -9,6 +9,7 @@ class VPedidoDetalle extends Model
     /**
      * La tabla (o vista) asociada con el modelo.
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_pedido_detalle';
 
     /**

@@ -29,8 +29,11 @@ class CreateUser extends CreateRecord
         $roleIds = $data['roles'] ?? [];
         $roleIdsJson = count($roleIds) > 0 ? json_encode($roleIds) : null;
 
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
+
         try {
-            DB::statement(
+            $dbInserterConnection->statement(
                 "CALL sp_crear_user(?, ?, ?, ?, @success, @message, @user_id)",
                 [
                     $name,
@@ -40,7 +43,7 @@ class CreateUser extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @user_id AS user_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @user_id AS user_id");
 
             if ($result && $result->success) {
                 Notification::make()

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class VPromocionesDetalle extends Model
 {
+    protected $connection = 'mysql_editor';
     protected $table = 'v_promociones_detalle'; // Nombre de tu vista SQL
 
     public $timestamps = false;

@@ -11,6 +11,7 @@ class VStockDetalle extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_stock_detalle'; // Nombre exacto de tu VISTA SQL
 
     /**

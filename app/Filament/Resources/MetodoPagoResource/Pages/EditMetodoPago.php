@@ -39,7 +39,7 @@ class EditMetodoPago extends EditRecord
         $descripcionInstrucciones = $data['descripcion_instrucciones'] ?? null;
         $comisionPorcentaje = $data['comision_asociada_porcentaje'] ?? 0.00;
         $activo = $data['activo'] ?? true;
-        
+        $dbEditorConnection = DB::connection('mysql_editor');
         // $data['logo_url'] será:
         // - Nueva ruta si se subió nuevo logo.
         // - Ruta original si el campo FileUpload no se tocó y estaba prellenado.
@@ -73,7 +73,7 @@ class EditMetodoPago extends EditRecord
 
 
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_metodo_pago(?, ?, ?, ?, ?, ?, @success, @message)",
                 [
                     $metodoPagoId,
@@ -85,7 +85,7 @@ class EditMetodoPago extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

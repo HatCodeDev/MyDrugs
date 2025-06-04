@@ -29,8 +29,10 @@ class CreatePromocion extends CreateRecord
         $aplicableAProductoId = $data['aplicable_a_producto_id'] ?? null;
         $montoMinimoPedido = $data['monto_minimo_pedido'] ?? null;
 
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
         try {
-            DB::statement(
+            $dbInserterConnection->statement(
                 "CALL sp_crear_promocion(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @success, @message, @promocion_id)",
                 [
                     $codigoPromocion,
@@ -48,7 +50,7 @@ class CreatePromocion extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @promocion_id AS promocion_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @promocion_id AS promocion_id");
 
             if ($result && $result->success) {
                 Notification::make()

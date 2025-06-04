@@ -35,9 +35,9 @@ class EditPromocion extends EditRecord
         $aplicableACategoriaId = $data['aplicable_a_categoria_id'] ?? null;
         $aplicableAProductoId = $data['aplicable_a_producto_id'] ?? null;
         $montoMinimoPedido = $data['monto_minimo_pedido'] ?? null;
-
+        $dbEditorConnection = DB::connection('mysql_editor');
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_promocion(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @success, @message)",
                 [
                     $promocionId,
@@ -56,7 +56,7 @@ class EditPromocion extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

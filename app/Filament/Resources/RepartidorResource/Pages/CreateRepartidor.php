@@ -25,8 +25,10 @@ class CreateRepartidor extends CreateRecord
         $calificacionPromedio = $data['calificacion_promedio'] ?? null;
         $numeroContactoCifrado = $data['numero_contacto_cifrado'] ?? null;
 
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
         try {
-            DB::statement(
+            $dbInserterConnection->statement(
                 "CALL sp_crear_repartidor(?, ?, ?, ?, ?, ?, ?, @success, @message, @repartidor_id)",
                 [
                     $userId,
@@ -39,7 +41,7 @@ class CreateRepartidor extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @repartidor_id AS repartidor_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @repartidor_id AS repartidor_id");
 
             if ($result && $result->success) {
                 Notification::make()

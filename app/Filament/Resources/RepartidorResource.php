@@ -29,13 +29,13 @@ class RepartidorResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name') // Asume relación 'user' en Repartidor y 'name' en User
-                    ->searchable()
-                    ->preload()
-                    ->nullable()
-                    // La unicidad de user_id en repartidores ya está en la BD y se validará en el SP
-                    ->label('Usuario Asociado (Opcional)'),
+                // Forms\Components\Select::make('user_id')
+                //     ->relationship('user', 'name') // Asume relación 'user' en Repartidor y 'name' en User
+                //     ->searchable()
+                //     ->preload()
+                //     ->nullable()
+                //     // La unicidad de user_id en repartidores ya está en la BD y se validará en el SP
+                //     ->label('Usuario Asociado (Opcional)'),
                 Forms\Components\TextInput::make('nombre_alias')
                     ->required()
                     ->maxLength(100)

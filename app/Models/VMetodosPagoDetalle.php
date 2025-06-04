@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class VMetodosPagoDetalle extends Model
 {
+    protected $connection = 'mysql_editor';
     protected $table = 'v_metodos_pago_detalle'; // Nombre de tu vista SQL
 
     public $timestamps = false; // Generalmente false para vistas

@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CalificacionResource\Pages;
 use App\Models\Calificacion;
 use App\Models\VCalificacionDetalle; 
-use Illuminate\Database\Eloquent\Builder; 
 
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -139,12 +138,13 @@ class CalificacionResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->action(function (Model $record) { 
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_calificacion(?, @success, @message)",
                                 [$record->calificacion_id] 
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
                             if ($result && $result->success) {
                                 Notification::make()
                                     ->title($result->message ?: '¡Eliminación exitosa!')

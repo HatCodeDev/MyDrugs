@@ -24,8 +24,11 @@ class CreateMetodoPago extends CreateRecord
         // $data['logo_url'] contendrá la ruta relativa si se subió un archivo, o null si no.
         $logoUrl = $data['logo_url'] ?? null;
 
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
+
         try {
-            DB::statement(
+             $dbInserterConnection->statement(
                 "CALL sp_crear_metodo_pago(?, ?, ?, ?, ?, @success, @message, @metodo_pago_id)",
                 [
                     $nombreMetodo,
@@ -36,7 +39,7 @@ class CreateMetodoPago extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @metodo_pago_id AS metodo_pago_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @metodo_pago_id AS metodo_pago_id");
 
             if ($result && $result->success) {
                 Notification::make()

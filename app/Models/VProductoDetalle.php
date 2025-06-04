@@ -12,6 +12,7 @@ class VProductoDetalle extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_productos_detalle'; // Nombre de la vista actualizado
 
     /**

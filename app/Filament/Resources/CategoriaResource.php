@@ -96,12 +96,13 @@ class CategoriaResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     // Acción de eliminación personalizada para llamar al SP
                     ->action(function (Model $record) { // $record es una instancia de VCategoriasDetalle
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_categoria(?, @success, @message)",
                                 [$record->categoria_id] // Usa el 'categoria_id' de la vista
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
                                 Notification::make()

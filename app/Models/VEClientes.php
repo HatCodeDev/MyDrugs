@@ -11,6 +11,7 @@ class VEClientes extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_editor';
     protected $table = 've_estadisticas_clientes'; // Nombre exacto de tu vista SQL
 
     /**
