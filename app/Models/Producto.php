@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Producto extends Model
 {
     use HasFactory;
+
+    protected $table = 'productos';
 
     protected $fillable = [
         'categoria_id',
@@ -22,57 +23,52 @@ class Producto extends Model
     ];
 
     protected $casts = [
+        'categoria_id' => 'integer',
         'precio_unitario' => 'decimal:2',
         'activo' => 'boolean',
     ];
 
     /**
-     * Get the categoria that owns the producto.
+     * Define la relación con el modelo Categoria.
+     * Un producto pertenece a una categoría.
      */
     public function categoria(): BelongsTo
     {
-        return $this->belongsTo(Categoria::class);
+        return $this->belongsTo(Categoria::class, 'categoria_id');
+        
     }
 
     /**
-     * Get the imagenes for the producto.
+     * Define la relación con el modelo ImagenProducto.
+     * Un producto puede tener muchas imágenes.
      */
     public function imagenes(): HasMany
     {
-        return $this->hasMany(ImagenProducto::class);
+        // Asegúrate de que el modelo ImagenProducto exista y esté correctamente nombrado.
+        // El segundo argumento es la clave foránea en la tabla 'imagenes_producto'.
+        return $this->hasMany(ImagenProducto::class, 'producto_id');
     }
 
     /**
-     * Get the calificaciones for the producto.
+     * Define la relación con el modelo Calificacion.
+     * Un producto puede tener muchas calificaciones.
      */
     public function calificaciones(): HasMany
     {
-        return $this->hasMany(Calificacion::class);
+        // Asegúrate de que el modelo Calificacion exista y esté correctamente nombrado.
+        // El segundo argumento es la clave foránea en la tabla 'calificaciones'.
+        return $this->hasMany(Calificacion::class, 'producto_id');
     }
 
-    /**
-     * Get the stock information for the producto.
-     * Assuming one primary stock entry per product for simplicity,
-     * or use HasMany if multiple stock batches/locations are common.
-     */
-    public function stock(): HasMany // O HasOne si es una entrada única de stock por producto
-    {
-        return $this->hasMany(Stock::class);
-    }
-
-    /**
-     * Get the detallesPedido associated with the producto.
-     */
-    public function detallesPedido(): HasMany
-    {
-        return $this->hasMany(DetallePedido::class);
-    }
-
-    /**
-     * Get the promociones aplicables a este producto.
-     */
-    public function promociones(): HasMany
-    {
-        return $this->hasMany(Promocion::class, 'aplicable_a_producto_id');
-    }
+    // Aquí puedes añadir otras relaciones si son necesarias, por ejemplo:
+    //
+    // public function stockItems(): HasMany
+    // {
+    //     return $this->hasMany(Stock::class, 'producto_id');
+    // }
+    //
+    // public function detallesPedido(): HasMany
+    // {
+    //     return $this->hasMany(DetallePedido::class, 'producto_id');
+    // }
 }

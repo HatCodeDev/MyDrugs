@@ -3,36 +3,37 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductoResource\Pages;
-use App\Filament\Resources\ProductoResource\RelationManagers;
-use App\Models\Producto; // El modelo principal del recurso
-use App\Models\VProductoDetalle; // Tu modelo de vista
+use App\Models\Producto;
+use App\Models\VProductosDetalle; // Modelo para la vista
+use App\Models\Categoria; // Para el selector de categorías
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Database\Eloquent\Model; // Para el tipo de $record en las acciones
-use Illuminate\Support\Facades\DB; // Para llamar a Stored Procedures
-use Filament\Notifications\Notification; // Para notificaciones personalizadas
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder; // Para búsquedas y ordenamiento en relaciones
 
 class ProductoResource extends Resource
 {
-    // El modelo principal del recurso sigue siendo Producto, ya que los formularios
-    // de Crear y Editar interactúan directamente con la tabla 'productos'.
     protected static ?string $model = Producto::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cube'; // Un ícono de ejemplo
+    protected static ?string $navigationIcon = 'heroicon-o-cube';
+    protected static ?string $modelLabel = 'Producto';
+    protected static ?string $pluralModelLabel = 'Productos';
+    // Usar un atributo que exista en el modelo base 'Producto'
+    protected static ?string $recordTitleAttribute = 'nombre';
 
-    // Define el formulario para crear y editar productos.
-    // Esto sigue interactuando con el modelo 'Producto' directamente.
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('categoria_id')
-                    ->relationship('categoria', 'nombre')
+                    ->relationship('categoria', 'nombre') // Relación con el modelo Categoria
+                    ->searchable()
+                    ->preload()
                     ->required()
                     ->label('Categoría'),
                 Forms\Components\TextInput::make('nombre')
@@ -40,143 +41,127 @@ class ProductoResource extends Resource
                     ->maxLength(255)
                     ->label('Nombre del Producto'),
                 Forms\Components\Textarea::make('descripcion')
-                    ->nullable()
-                    ->rows(3)
+                    ->required()
+                    ->columnSpanFull()
                     ->label('Descripción'),
                 Forms\Components\TextInput::make('precio_unitario')
                     ->required()
                     ->numeric()
-                    ->prefix('MXN')
+                    ->prefix('$')
+                    ->minValue(0.01)
+                    ->step(0.01)
                     ->label('Precio Unitario'),
                 Forms\Components\TextInput::make('unidad_medida')
                     ->required()
                     ->maxLength(50)
-                    ->label('Unidad de Medida'),
+                    ->label('Unidad de Medida')
+                    ->helperText('Ej: gramo, unidad, mililitro, blister'),
                 Forms\Components\Toggle::make('activo')
+                    ->required()
                     ->default(true)
-                    ->label('Activo'),
+                    ->label('Activo en Tienda'),
             ]);
     }
 
-    // Configura la tabla de listado para usar la vista y personalizar las acciones.
     public static function table(Table $table): Table
     {
         return $table
-            // *** Fuente de datos principal: Tu modelo de vista ***
-            ->query(VProductoDetalle::query()) // Usa el modelo de la vista como fuente de datos
+            ->query(VProductosDetalle::query()) // Usar la vista para el listado
             ->columns([
                 Tables\Columns\TextColumn::make('producto_id')
-                    ->label('ID Producto')
+                    ->label('ID Prod.')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('producto_nombre')
-                    ->label('Nombre')
+                Tables\Columns\TextColumn::make('nombre_producto') // De la vista
+                    ->label('Nombre Producto')
+                    ->searchable()
                     ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('categoria_nombre')
+                    ->limit(30)
+                    ->tooltip(fn (VProductosDetalle $record): string => $record->nombre_producto),
+                Tables\Columns\TextColumn::make('nombre_categoria') // De la vista
                     ->label('Categoría')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('producto_precio_unitario')
+                    ->searchable() // La búsqueda en campos de vistas es directa
+                    ->sortable(),   // El ordenamiento en campos de vistas es directo
+                Tables\Columns\TextColumn::make('precio_unitario')
                     ->label('Precio')
-                    ->money('MXN') // Formato de moneda
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('producto_unidad_medida')
+                    ->money('MXN') // Ajusta la moneda si es necesario
+                    ->sortable()
+                    ->alignRight(),
+                Tables\Columns\TextColumn::make('unidad_medida')
                     ->label('Unidad')
-                    ->sortable(),
-                Tables\Columns\IconColumn::make('producto_activo')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('activo')
                     ->label('Activo')
                     ->boolean()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('producto_created_at')
-                    ->label('Creado')
-                    ->dateTime()
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha Creación')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true), // Oculto por defecto
-                Tables\Columns\TextColumn::make('producto_updated_at')
-                    ->label('Actualizado')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true), // Oculto por defecto
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                // Filtros basados en las columnas de la vista
                 Tables\Filters\SelectFilter::make('categoria_id')
-                    ->relationship('categoria', 'nombre') // Asume que VProductoDetalle tiene una relación 'categoria'
-                    ->label('Filtrar por Categoría'),
-                Tables\Filters\TernaryFilter::make('producto_activo')
+        ->label('Categoría')
+        // En lugar de ->relationship('categoria', 'nombre')
+        ->options(
+            fn () => Categoria::query()->pluck('nombre', 'id')->all()
+        )
+        ->searchable() // La búsqueda en el dropdown funcionará sobre las opciones cargadas
+        ->preload(), // Precarga las opciones
+                Tables\Filters\TernaryFilter::make('activo')
                     ->label('Estado Activo')
-                    ->boolean(),
-                // Puedes añadir más filtros aquí
+                    // Este filtro operará sobre la columna 'activo' de la vista
+                    ,
             ])
             ->actions([
-                // Acción de Editar: Filament la gestiona para redirigir a EditProducto.php
-                // y usa el modelo principal (Producto) para cargar el formulario.
                 Tables\Actions\EditAction::make(),
-
-                // *** Personalización de DeleteAction para llamar a SP ***
                 Tables\Actions\DeleteAction::make()
-                    ->action(function (Model $record) { // $record aquí es una instancia de VProductoDetalle
-                        try {
-                            // Llama al Stored Procedure sp_eliminar_producto
-                            // El ID a eliminar se obtiene de la clave primaria de la vista: $record->producto_id
-                            DB::statement(
+                    ->action(function (Model $record) { // $record es VProductosDetalle
+                      $dbEditorConnection = DB::connection('mysql_editor');  
+                      try {
+                             $dbEditorConnection->statement(
                                 "CALL sp_eliminar_producto(?, @success, @message)",
-                                [$record->producto_id] // Pasa el ID del producto de la vista
+                                [$record->producto_id] // ID del producto desde la vista
                             );
-
-                            // Obtiene los valores de las variables de salida del SP
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
-                                // Muestra una notificación de éxito de Filament
                                 Notification::make()
-                                    ->title($result->message ?: 'Producto eliminado exitosamente.')
-                                    ->success()
-                                    ->send();
+                                    ->title($result->message ?: '¡Producto eliminado exitosamente!')
+                                    ->success()->send();
                             } else {
-                                // Muestra una notificación de error de Filament
                                 Notification::make()
                                     ->title('Error al eliminar producto')
-                                    ->body($result->message ?: 'No se pudo eliminar el producto a través del Stored Procedure.')
-                                    ->danger()
-                                    ->send();
-                                // Si hay un error, puedes lanzar una excepción para detener la acción
-                                // o simplemente dejar que la notificación informe.
-                                // throw new \Exception($result->message ?: 'Error desconocido al eliminar.');
+                                    ->body($result->message ?: 'No se pudo eliminar el producto.')
+                                    ->danger()->send();
                             }
                         } catch (\Exception $e) {
-                            // Captura cualquier excepción inesperada (ej. error de conexión a BD)
-                            report($e); // Registra la excepción en los logs de Laravel
+                            report($e);
                             Notification::make()
                                 ->title('Error inesperado')
-                                ->body('Ocurrió un problema técnico al intentar eliminar el producto: ' . $e->getMessage())
-                                ->danger()
-                                ->send();
+                                ->body('Ocurrió un problema técnico: ' . $e->getMessage())
+                                ->danger()->send();
                         }
                     }),
             ])
             ->bulkActions([
-                // Filament tiene acciones masivas por defecto. Si quieres que la eliminación masiva
-                // también use un SP, tendrías que personalizar Tables\Actions\DeleteBulkAction::make()
-                // de manera similar a la acción individual.
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
 
-    // Define las relaciones del recurso (si las hay).
-    // Esto sigue basándose en el modelo principal 'Producto'.
     public static function getRelations(): array
     {
         return [
-            // Por ejemplo, si tuvieras un RelationManager para Imágenes del Producto
-            // RelationManagers\ImagenesProductoRelationManager::class,
+            // Ejemplo:
+            // \App\Filament\Resources\ProductoResource\RelationManagers\ImagenesProductoRelationManager::class,
         ];
     }
 
-    // Define las páginas del recurso.
     public static function getPages(): array
     {
         return [
@@ -184,14 +169,5 @@ class ProductoResource extends Resource
             'create' => Pages\CreateProducto::route('/create'),
             'edit' => Pages\EditProducto::route('/{record}/edit'),
         ];
-    }
-
-    // Opcional: Si necesitas un scope de soft delete
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
     }
 }
