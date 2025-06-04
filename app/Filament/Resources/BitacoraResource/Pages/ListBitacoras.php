@@ -13,7 +13,10 @@ class ListBitacoras extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            // No incluimos Actions\CreateAction::make() porque canCreate() devuelve false
         ];
     }
+
+    // La consulta para la tabla ya está definida en BitacoraResource::table()
+    // usando ->query(VBitacorasDetalle::query())
 }

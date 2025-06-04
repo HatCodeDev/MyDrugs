@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Bitacora extends Model
 {
@@ -13,6 +12,12 @@ class Bitacora extends Model
 
     protected $table = 'bitacoras';
 
+    /**
+     * Los atributos que se pueden asignar masivamente.
+     * Normalmente, la bitácora se llena mediante triggers o lógica de aplicación,
+     * por lo que $fillable podría no ser estrictamente necesario para creación manual masiva,
+     * pero es bueno tenerlo por si acaso o para testing.
+     */
     protected $fillable = [
         'user_id',
         'accion',
@@ -22,31 +27,22 @@ class Bitacora extends Model
         'fecha_evento',
     ];
 
+    /**
+     * Los atributos que deben ser convertidos a tipos nativos.
+     */
     protected $casts = [
-        'descripcion_detallada' => 'array', // Si vas a guardar JSON
+        'user_id' => 'integer',
+        'descripcion_detallada' => 'json', // O 'array' si prefieres trabajar con arrays en PHP
+        'referencia_id' => 'integer',
         'fecha_evento' => 'datetime',
     ];
 
     /**
-     * Get the user who performed the action.
+     * Obtiene el usuario que realizó la acción.
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        // Asegúrate de que el modelo User exista en App\Models\User
+        return $this->belongsTo(User::class, 'user_id');
     }
-
-    /**
-     * Get the parent model of the log entry (polymorphic).
-     * Para que esto funcione, las tablas referenciadas (ej. Producto, Pedido)
-     * deben tener una relación definida como $this->morphMany(Bitacora::class, 'referencia');
-     * y el campo 'referencia_entidad' almacenaría el nombre del modelo (App\Models\Producto).
-     * Sin embargo, la definición actual con 'referencia_entidad' (string) y 'referencia_id' (int)
-     * es más simple y no requiere relaciones polimórficas inversas estrictas.
-     * Si quieres usar MorphTo, 'referencia_entidad' debería llamarse 'referencia_type'.
-     */
-    // public function referenciable(): MorphTo
-    // {
-    //    // Cambiar 'referencia_entidad' a 'referencia_type' en la migración
-    //    return $this->morphTo(__FUNCTION__, 'referencia_type', 'referencia_id');
-    // }
 }
