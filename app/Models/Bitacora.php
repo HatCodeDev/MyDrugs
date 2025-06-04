@@ -10,8 +10,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Bitacora extends Model
 {
     use HasFactory;
-
-    protected $table = 'bitacoras';
+    protected $table = 'v_bitacora';
 
     protected $fillable = [
         'user_id',
@@ -23,7 +22,7 @@ class Bitacora extends Model
     ];
 
     protected $casts = [
-        'descripcion_detallada' => 'array', // Si vas a guardar JSON
+        'descripcion_detallada' => 'array', 
         'fecha_evento' => 'datetime',
     ];
 
