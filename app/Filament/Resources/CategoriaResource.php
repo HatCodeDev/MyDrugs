@@ -122,14 +122,7 @@ class CategoriaResource extends Resource
                                 ->danger()->send();
                         }
                     }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    // NOTA: DeleteBulkAction por defecto usa Eloquent.
-                    // Para usar SPs en eliminación masiva, necesitarías una BulkAction personalizada.
-                ]),
-            ]);
+                ]);
     }
 
     public static function getRelations(): array

@@ -152,13 +152,8 @@ class RepartidorResource extends Resource
                                 ->danger()->send();
                         }
                     }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    // Considerar personalizar si necesitas usar SPs para eliminación en masa.
-                ]),
-            ]);
+                ]);
+           
     }
 
     public static function getRelations(): array

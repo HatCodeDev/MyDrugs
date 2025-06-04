@@ -140,9 +140,6 @@ class UserResource extends Resource
                             ->send();
                     }
                 }),
-            ])
-            ->bulkActions([
-                
             ]);
     }
 

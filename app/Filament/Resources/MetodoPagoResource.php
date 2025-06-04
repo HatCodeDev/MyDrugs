@@ -170,12 +170,6 @@ class MetodoPagoResource extends Resource
                             Notification::make()->title('Error en la Eliminación')->body($finalMessage)->danger()->send();
                         }
                     }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    // Considerar personalizar si necesitas manejo de SPs y logos en masa.
-                ]),
             ]);
     }
 
