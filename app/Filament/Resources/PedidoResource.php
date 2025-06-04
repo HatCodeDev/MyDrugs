@@ -311,14 +311,12 @@ class PedidoResource extends Resource
                     ->requiresConfirmation() 
                     ->action(function (VPedidoDetalle $record) { 
                         try {
-
-                            DB::statement(
+                            $dbEditorConnection = DB::connection('mysql_editor');
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_pedido(?, @success, @message)",
                                 [$record->pedido_id] 
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
-
-
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
                             if ($result && $result->success) {
                                 Notification::make()
                                     ->title('¡Eliminado!')

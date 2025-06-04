@@ -104,14 +104,14 @@ class ImagenProductoResource extends Resource
                         $fileHandledSuccessfully = false; // Para rastrear si el archivo se manejó correctamente
                         $filePath = $record->url_imagen; // Guardar la ruta antes de cualquier cosa
                         $finalMessage = 'Error desconocido durante la eliminación.'; // Mensaje por defecto
-
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
                             // 1. Intentar eliminar el registro de la base de datos
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_imagen_producto(?, @success, @message)",
                                 [$record->imagen_producto_id] // Usar el ID de la imagen desde la vista
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
                                 $dbSuccess = true;

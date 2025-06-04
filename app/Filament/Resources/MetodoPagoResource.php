@@ -118,13 +118,13 @@ class MetodoPagoResource extends Resource
                         $fileHandledSuccessfully = false;
                         $filePath = $record->logo_url; // Asumiendo que logo_url es una ruta de archivo local
                         $finalMessage = 'Error desconocido durante la eliminación.';
-
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_metodo_pago(?, @success, @message)",
                                 [$record->metodo_pago_id]
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
                                 $dbSuccess = true;

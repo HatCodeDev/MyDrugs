@@ -160,12 +160,13 @@ class PromocionResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->action(function (Model $record) { // $record es VPromocionesDetalle
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
-                            DB::statement(
+                           $dbEditorConnection->statement(
                                 "CALL sp_eliminar_promocion(?, @success, @message)",
                                 [$record->promocion_id]
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
                                 Notification::make()

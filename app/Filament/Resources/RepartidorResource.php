@@ -125,13 +125,14 @@ class RepartidorResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->action(function (Model $record) { // $record es VRepartidoresDetalle
+                    ->action(function (Model $record) { 
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_repartidor(?, @success, @message)",
                                 [$record->repartidor_id] // ID del repartidor desde la vista
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
                                 Notification::make()
