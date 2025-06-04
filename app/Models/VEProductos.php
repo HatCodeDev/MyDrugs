@@ -11,6 +11,7 @@ class VEProductos extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_editor';
     protected $table = 've_estadisticas_productos'; // Nombre exacto de tu vista SQL
 
     /**

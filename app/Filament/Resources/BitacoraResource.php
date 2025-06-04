@@ -24,24 +24,7 @@ class BitacoraResource extends Resource
     protected static ?string $pluralModelLabel = 'Bitácoras';
     protected static ?string $recordTitleAttribute = 'accion'; // O 'id'
 
-    /**
-     * Aunque no vamos a "editar", la ViewAction usa el formulario por defecto para mostrar campos.
-     * Podemos definir un Infolist para una mejor visualización.
-     * Si no se define form(), la ViewAction podría intentar mostrar un formulario vacío o fallar.
-     * Por simplicidad, no definiremos un form aquí, ya que nos enfocaremos en la tabla y una posible ViewAction.
-     * Si se necesita una página de vista detallada, se usará un Infolist en ViewBitacora.php.
-     */
-    // public static function form(Form $form): Form
-    // {
-    //     return $form
-    //         ->schema([
-    //             // Campos de solo lectura si se quisiera un "formulario" de vista
-    //             Forms\Components\TextInput::make('accion')->disabled(),
-    //             Forms\Components\DateTimePicker::make('fecha_evento')->disabled(),
-    //             // ... otros campos ...
-    //         ]);
-    // }
-
+   
     public static function table(Table $table): Table
     {
         return $table

@@ -155,13 +155,14 @@ class StockResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     ->requiresConfirmation() 
                     ->action(function (VStockDetalle $record) { 
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
                             $stockIdParaEliminar = $record->stock_id;
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_stock(?, @success, @message)",
                                 [$stockIdParaEliminar]
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
 
                             if ($result && $result->success) {

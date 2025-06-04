@@ -13,6 +13,7 @@ class VImagenesProductoDetalle extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_imagenes_producto_detalle';
 
     /**

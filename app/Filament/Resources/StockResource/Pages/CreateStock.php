@@ -21,8 +21,11 @@ class CreateStock extends CreateRecord
         $fechaCaducidad = $data['fecha_caducidad'] ?? null;
         $ubicacionAlmacen = $data['ubicacion_almacen'] ?? null;
 
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
+
         try {
-            DB::statement(
+            $dbInserterConnection->statement(
                 "CALL sp_crear_stock(?, ?, ?, ?, ?, @success, @message, @stock_id)",
                 [
                     $productoId,
@@ -33,7 +36,7 @@ class CreateStock extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @stock_id AS stock_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @stock_id AS stock_id");
 
             if ($result && $result->success) {
                 Notification::make()

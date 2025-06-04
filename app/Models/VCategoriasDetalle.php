@@ -12,6 +12,7 @@ class VCategoriasDetalle extends Model
      *
      * @var string
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_categorias_detalle'; // Nombre de tu vista de categorías
 
     /**

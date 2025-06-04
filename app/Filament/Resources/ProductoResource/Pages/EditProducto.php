@@ -30,9 +30,9 @@ class EditProducto extends EditRecord
         $precioUnitario = $data['precio_unitario'];
         $unidadMedida = $data['unidad_medida'];
         $activo = $data['activo'] ?? true;
-
+        $dbInserterConnection = DB::connection('mysql_inserter'); 
         try {
-            DB::statement(
+            $dbInserterConnection->statement( 
                 "CALL sp_actualizar_producto(?, ?, ?, ?, ?, ?, ?, @success, @message)",
                 [
                     $productoId,
@@ -45,7 +45,7 @@ class EditProducto extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

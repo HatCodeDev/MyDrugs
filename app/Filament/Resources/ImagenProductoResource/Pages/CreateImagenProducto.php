@@ -25,8 +25,12 @@ class CreateImagenProducto extends CreateRecord
         $altText = $data['alt_text'] ?? null;
         $orden = $data['orden'] ?? 0;
 
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
+
         try {
-            DB::statement(
+            // Llamada al procedimiento almacenado usando la conexión específica
+            $dbInserterConnection->statement(
                 "CALL sp_crear_imagen_producto(?, ?, ?, ?, @success, @message, @imagen_producto_id)",
                 [
                     $productoId,
@@ -36,7 +40,8 @@ class CreateImagenProducto extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @imagen_producto_id AS imagen_producto_id");
+            // Recuperar los parámetros OUT usando la conexión específica
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @imagen_producto_id AS imagen_producto_id");
 
             if ($result && $result->success) {
                 Notification::make()
@@ -52,11 +57,9 @@ class CreateImagenProducto extends CreateRecord
                         ->body('La imagen se creó en BD (según SP) pero no se pudo cargar el modelo.')
                         ->danger()
                         ->send();
-                    // Considerar eliminar el archivo físico si la carga del modelo falla,
-                    // aunque esto podría ser una condición muy rara.
+                    // Considerar eliminar el archivo físico si la carga del modelo falla.
                     if ($urlImagen) {
                         Storage::disk('public')->delete($urlImagen);
-                        Log::warning("IMAGEN_PRODUCTO_CREATE: Archivo físico {$urlImagen} eliminado debido a fallo al cargar modelo post-creación SP.");
                     }
                     $this->halt();
                     return new ImagenProducto();

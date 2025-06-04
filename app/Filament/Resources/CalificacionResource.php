@@ -3,11 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CalificacionResource\Pages;
-use App\Models\Calificacion; // Modelo base para el recurso
-use App\Models\VCalificacionDetalle; // <--- AÑADE ESTE IMPORT para tu modelo de vista
-use Illuminate\Database\Eloquent\Builder; // <--- AÑADE ESTE IMPORT para el tipado en modifyQueryUsing si lo usaras
+use App\Models\Calificacion;
+use App\Models\VCalificacionDetalle; 
 
-// Tus otros uses:
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -21,7 +19,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class CalificacionResource extends Resource
 {
-    // ESTA LÍNEA NO CAMBIA. SIGUE SIENDO EL MODELO BASE Calificacion::class.
     protected static ?string $model = Calificacion::class;
     protected static ?string $navigationIcon = 'heroicon-o-star';
     protected static ?string $modelLabel = 'Calificación';
@@ -29,10 +26,8 @@ class CalificacionResource extends Resource
     protected static ?string $recordTitleAttribute = 'id';
 
 
-    // EL MÉTODO form() NO CAMBIA.
     public static function form(Form $form): Form
     {
-        // ... (tu código de form existente, sin cambios) ...
         return $form
             ->schema([
                 Forms\Components\Hidden::make('user_id')
@@ -78,14 +73,11 @@ class CalificacionResource extends Resource
             ]);
     }
 
-    // MÉTODO table() MODIFICADO:
     public static function table(Table $table): Table
     {
         return $table
-            // AQUÍ LE DECIMOS A LA TABLA QUE USE LA VISTA COMO SU FUENTE DE DATOS PRINCIPAL
             ->query(VCalificacionDetalle::query())
             ->columns([
-                // Columnas de la VISTA 'v_calificaciones_detalle'
                 Tables\Columns\TextColumn::make('calificacion_id')
                     ->label('ID Cal.')
                     ->sortable()
@@ -94,20 +86,15 @@ class CalificacionResource extends Resource
                 Tables\Columns\TextColumn::make('producto_nombre')
                     ->label('Producto')
                     ->searchable()
-                    ->sortable()
-                    
-                    ,
-
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('producto_precio_unitario')
                     ->label('Precio Prod.')
                     ->money('MXN')
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('usuario_nombre')
                     ->label('Usuario')
                     ->searchable()
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('usuario_email')
                     ->label('Email Usuario')
                     ->searchable()
@@ -123,19 +110,16 @@ class CalificacionResource extends Resource
                     })
                     ->formatStateUsing(fn (int $state): string => "{$state} " . ($state === 1 ? 'estrella' : 'estrellas'))
                     ->label('Puntuación'),
-
                 Tables\Columns\TextColumn::make('comentario')
                     ->limit(50)
                     ->tooltip('Ver comentario completo')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Comentario'),
-
                 Tables\Columns\TextColumn::make('fecha_calificacion')
                     ->dateTime()
                     ->sortable()
                     ->label('Fecha Calificación'),
-
                 Tables\Columns\TextColumn::make('calificacion_created_at')
                     ->dateTime()
                     ->sortable()
@@ -149,18 +133,18 @@ class CalificacionResource extends Resource
                     ->label('Actualizado'),
             ])
             ->filters([
-                // ... tus filtros ...
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->action(function (Model $record) { // $record aquí será una instancia de VCalificacionDetalle
+                    ->action(function (Model $record) { 
+                        $dbEditorConnection = DB::connection('mysql_editor');
                         try {
-                            DB::statement(
+                            $dbEditorConnection->statement(
                                 "CALL sp_eliminar_calificacion(?, @success, @message)",
-                                [$record->calificacion_id] // Usamos el calificacion_id de la vista
+                                [$record->calificacion_id] 
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
                             if ($result && $result->success) {
                                 Notification::make()
                                     ->title($result->message ?: '¡Eliminación exitosa!')
@@ -187,7 +171,6 @@ class CalificacionResource extends Resource
             ]);
     }
 
-    // getRelations() y getPages() NO CAMBIAN
     public static function getRelations(): array
     {
         return [];

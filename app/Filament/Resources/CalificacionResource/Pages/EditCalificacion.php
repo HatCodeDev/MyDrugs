@@ -29,12 +29,14 @@ class EditCalificacion extends EditRecord
      */
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        $calificacionId = $record->getKey(); // Obtiene el ID del registro actual
+        $calificacionId = $record->getKey();
         $puntuacion = $data['puntuacion'];
         $comentario = $data['comentario'] ?? null;
 
+        $dbEditorConnection = DB::connection('mysql_editor');
+
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_calificacion(?, ?, ?, @success, @message)",
                 [
                     $calificacionId,
@@ -43,7 +45,7 @@ class EditCalificacion extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()
@@ -71,9 +73,7 @@ class EditCalificacion extends EditRecord
             // $this->halt(); // Opcional, si el error es crítico
         }
 
-        // Importante: Filament espera que este método devuelva el modelo actualizado.
-        // Llama a refresh() para asegurar que el modelo en memoria ($record)
-        // refleje los cambios hechos directamente en la base de datos por el SP.
+       
         return $record->refresh();
     }
 

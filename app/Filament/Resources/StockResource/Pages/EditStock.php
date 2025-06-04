@@ -28,9 +28,9 @@ class EditStock extends EditRecord
         $loteNumero = $data['lote_numero'] ?? null;
         $fechaCaducidad = $data['fecha_caducidad'] ?? null;
         $ubicacionAlmacen = $data['ubicacion_almacen'] ?? null;
-
+        $dbEditorConnection = DB::connection('mysql_editor');
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_stock(?, ?, ?, ?, ?, @success, @message)",
                 [
                     $stockId,
@@ -41,7 +41,7 @@ class EditStock extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

@@ -16,14 +16,16 @@ class CreateCategoria extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         // Obtén los datos del formulario.
-        // Para 'categorias', probablemente tengas 'nombre' y 'descripcion'.
         $nombre = $data['nombre'];
-        $descripcion = $data['descripcion'] ?? null; // Asegurar null si no se provee
+        $descripcion = $data['descripcion'] ?? null;
+
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
 
         try {
             // Llamada al procedimiento almacenado para crear una categoría
-            // Asumo que tu SP se llama 'sp_crear_categoria' y tiene parámetros OUT similares
-            DB::statement(
+            // usando la conexión específica
+            $dbInserterConnection->statement(
                 "CALL sp_crear_categoria(?, ?, @success, @message, @categoria_id)",
                 [
                     $nombre,
@@ -31,8 +33,8 @@ class CreateCategoria extends CreateRecord
                 ]
             );
 
-            // Recuperar los parámetros OUT
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @categoria_id AS categoria_id");
+            // Recuperar los parámetros OUT usando la conexión específica
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @categoria_id AS categoria_id");
 
             if ($result && $result->success) {
                 Notification::make()
@@ -41,6 +43,7 @@ class CreateCategoria extends CreateRecord
                     ->send();
 
                 // Filament espera que este método devuelva la instancia del modelo creado.
+                // Es importante usar el modelo Eloquent estándar aquí para que Filament funcione correctamente.
                 $categoria = Categoria::find($result->categoria_id);
 
                 if (!$categoria) {

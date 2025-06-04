@@ -62,6 +62,102 @@ return [
             ]) : [],
         ],
 
+        // Nueva conexión para el usuario 'creador_registros'
+        'mysql_inserter' => [
+            'driver' => 'mysql',
+            'host' => env('DB_INSERTER_HOST', '127.0.0.1'),
+            'port' => env('DB_INSERTER_PORT', '3306'),
+            'database' => env('DB_INSERTER_DATABASE', 'mydrugs'),
+            'username' => env('DB_INSERTER_USERNAME', 'creador_registros'),
+            'password' => env('DB_INSERTER_PASSWORD', 'creadorPass'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'mysql_editor' => [
+            'driver' => 'mysql',
+            'host' => env('DB_EDITOR_HOST', env('DB_HOST', '127.0.0.1')), 
+            'port' => env('DB_EDITOR_PORT', env('DB_PORT', '3306')), 
+            'database' => env('DB_EDITOR_DATABASE', env('DB_DATABASE', 'mydrugs')), 
+            'username' => env('DB_EDITOR_USERNAME', 'editor_registros'),
+            'password' => env('DB_EDITOR_PASSWORD', 'editorPass'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+        
+        'mysql_admin' => [
+            'driver' => 'mysql',
+            'host' => env('DB_ADMIN_HOST', env('DB_HOST', '127.0.0.1')), 
+            'port' => env('DB_ADMIN_PORT', env('DB_PORT', '3306')), 
+            'database' => env('DB_ADMIN_DATABASE', 'mydrugs'), 
+            'username' => env('DB_ADMIN_USERNAME', 'admin_mydrugs'),
+            'password' => env('DB_ADMIN_PASSWORD', 'adminMydrugsPass!'), 
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'mysql_perm_manager' => [
+            'driver' => 'mysql',
+            'host' => env('DB_PERM_MANAGER_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_PERM_MANAGER_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_PERM_MANAGER_DATABASE', 'mydrugs'), 
+            'username' => env('DB_PERM_MANAGER_USERNAME', 'perm_manager'),
+            'password' => env('DB_PERM_MANAGER_PASSWORD', 'permManagerPass!'), 
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'mysql_schema_creator' => [
+            'driver' => 'mysql',
+            'host' => env('DB_SCHEMA_CREATOR_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_SCHEMA_CREATOR_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_SCHEMA_CREATOR_DATABASE', 'mydrugs'), 
+            'username' => env('DB_SCHEMA_CREATOR_USERNAME', 'schema_creator'),
+            'password' => env('DB_SCHEMA_CREATOR_PASSWORD', 'schemaCreatorPass!'), 
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
@@ -147,7 +243,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

@@ -120,12 +120,13 @@ class ProductoResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->action(function (Model $record) { // $record es VProductosDetalle
-                        try {
-                            DB::statement(
+                      $dbEditorConnection = DB::connection('mysql_editor');  
+                      try {
+                             $dbEditorConnection->statement(
                                 "CALL sp_eliminar_producto(?, @success, @message)",
                                 [$record->producto_id] // ID del producto desde la vista
                             );
-                            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+                            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
                             if ($result && $result->success) {
                                 Notification::make()

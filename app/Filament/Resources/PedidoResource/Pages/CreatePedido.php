@@ -36,8 +36,12 @@ class CreatePedido extends CreateRecord
                 'precio_unitario_en_pedido' => $detalle['precio_unitario_en_pedido'],
             ];
         }, $detallesArray));
+
+        // Obtener la conexión específica para el 'inserter'
+        $dbInserterConnection = DB::connection('mysql_inserter');
+
         try {
-            DB::statement(
+            $dbInserterConnection->statement(
                 "CALL sp_crear_pedido(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @success, @message, @pedido_id)",
                 [
                     $userId, $repartidorId, $metodoPagoId, $promocionId,
@@ -47,7 +51,7 @@ class CreatePedido extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @pedido_id AS pedido_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @pedido_id AS pedido_id");
             if ($result && $result->success) {
                 Notification::make()
                     ->title($result->message ?: '¡Pedido creado exitosamente!')

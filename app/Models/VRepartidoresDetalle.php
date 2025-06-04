@@ -10,6 +10,7 @@ class VRepartidoresDetalle extends Model
      * La tabla de base de datos asociada con el modelo.
      * Nombre exacto de tu vista SQL.
      */
+    protected $connection = 'mysql_editor';
     protected $table = 'v_repartidores_detalle';
 
     /**

@@ -30,11 +30,12 @@ class EditCategoria extends EditRecord
         $categoriaId = $record->getKey(); // Obtiene el ID de la categoría actual
         $nombre = $data['nombre'];
         $descripcion = $data['descripcion'] ?? null;
+        $dbEditorConnection = DB::connection('mysql_editor');
 
         try {
             // Llamada al procedimiento almacenado para actualizar una categoría
             // Asumo que tu SP se llama 'sp_actualizar_categoria'
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_categoria(?, ?, ?, @success, @message)",
                 [
                     $categoriaId,
@@ -43,7 +44,7 @@ class EditCategoria extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

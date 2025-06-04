@@ -23,9 +23,9 @@ class CreateProducto extends CreateRecord
         $precioUnitario = $data['precio_unitario'];
         $unidadMedida = $data['unidad_medida'];
         $activo = $data['activo'] ?? true; // Default true si no se envía
-
+        $dbEditorConnection = DB::connection('mysql_editor');
         try {
-            DB::statement(
+            $dbInserterConnection->statement( 
                 "CALL sp_crear_producto(?, ?, ?, ?, ?, ?, @success, @message, @producto_id)",
                 [
                     $categoriaId,
@@ -37,7 +37,7 @@ class CreateProducto extends CreateRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message, @producto_id AS producto_id");
+            $result = $dbInserterConnection->selectOne("SELECT @success AS success, @message AS message, @producto_id AS producto_id");
 
             if ($result && $result->success) {
                 Notification::make()

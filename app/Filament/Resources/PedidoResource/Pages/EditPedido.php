@@ -58,9 +58,9 @@ class EditPedido extends EditRecord
                 'precio_unitario_en_pedido' => $detalle['precio_unitario_en_pedido'],
             ];
         }, $detallesArray));
-
+        $dbEditorConnection = DB::connection('mysql_editor');
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_pedido(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @success, @message)",
                 [
                     $record->getKey(), 
@@ -78,7 +78,7 @@ class EditPedido extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()

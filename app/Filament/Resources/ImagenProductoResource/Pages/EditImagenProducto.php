@@ -51,6 +51,7 @@ class EditImagenProducto extends EditRecord
         $productoId = $data['producto_id'];
         $altText = $data['alt_text'] ?? null;
         $orden = $data['orden'] ?? 0;
+        $dbEditorConnection = DB::connection('mysql_editor');
 
         // $data['url_imagen'] contendrá:
         // - La nueva ruta del archivo si se subió una nueva imagen.
@@ -76,7 +77,7 @@ class EditImagenProducto extends EditRecord
         }
 
         try {
-            DB::statement(
+            $dbEditorConnection->statement(
                 "CALL sp_actualizar_imagen_producto(?, ?, ?, ?, ?, @success, @message)",
                 [
                     $imagenProductoId,
@@ -87,7 +88,7 @@ class EditImagenProducto extends EditRecord
                 ]
             );
 
-            $result = DB::selectOne("SELECT @success AS success, @message AS message");
+            $result = $dbEditorConnection->selectOne("SELECT @success AS success, @message AS message");
 
             if ($result && $result->success) {
                 Notification::make()
